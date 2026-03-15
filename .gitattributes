@@ -1,0 +1,13 @@
+# Set default behavior, in case people don't have core.autocrlf set.
+# This will handle line endings automatically for files Git considers text.
+* text=auto
+
+# Explicitly declare text files you want to always be normalized and converted
+# to native line endings on checkout.
+*.html text
+*.vue text
+*.js text
+*.ts text
+*.css text
+*.json text
+*.md text
