@@ -253,6 +253,7 @@ const handleGenerate = async () => {
     const meterMap = new Map(meterAir?.map(m => [m.warga_id, m]) || [])
 
     const { data: customIurans, error: errorC } = await supabase.from('iuran_warga').select('*')
+    if (errorC) throw errorC
     const customMap = new Map()
     customIurans?.forEach(ci => {
       if (!customMap.has(ci.warga_id)) customMap.set(ci.warga_id, [])
