@@ -55,6 +55,7 @@
                 <input 
                   type="number" 
                   v-model.number="item.meter_akhir" 
+                  @input="calculateTotal(item)"
                   class="w-16 border border-slate-300 rounded p-1 text-xs text-center focus:ring-1 focus:ring-primary-500 outline-none" 
                 />
               </td>
@@ -62,7 +63,8 @@
                 <input 
                   type="number" 
                   v-model.number="item.tarif_per_m3" 
-                  class="w-16 border border-slate-300 rounded p-1 text-xs text-center focus:ring-1 focus:ring-primary-500 outline-none" 
+                  class="w-16 border border-slate-200 rounded p-1 text-xs text-center bg-slate-50" 
+                  readonly
                 />
               </td>
               <td class="px-2 py-3 text-center">
@@ -72,8 +74,12 @@
                   class="w-4 h-4 accent-red-500 rounded cursor-pointer" 
                 />
               </td>
-              <td class="px-2 py-3 text-center font-medium text-slate-600 text-xs">{{ item.pemakaian || 0 }} m3</td>
-              <td class="px-3 py-3 font-bold text-primary-600 text-xs whitespace-nowrap">{{ formatCurrency(item.total || 0) }}</td>
+              <td class="px-2 py-3 text-center font-medium text-slate-600 text-xs">
+                {{ item.meter_akhir !== null ? (item.pemakaian || 0) : '-' }} m3
+              </td>
+              <td class="px-3 py-3 font-bold text-primary-600 text-xs whitespace-nowrap">
+                {{ item.meter_akhir !== null ? formatCurrency(item.total || 0) : '-' }}
+              </td>
               <td class="px-3 py-3 text-right sticky right-0 bg-white border-l border-slate-100 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.1)]">
                 <div class="flex flex-col gap-1 items-end">
                   <button 
@@ -127,6 +133,14 @@ const tahunRange = [new Date().getFullYear() - 1, new Date().getFullYear(), new 
 
 const formatCurrency = (val: number) => {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val)
+}
+
+const calculateTotal = (item: any) => {
+  const pemakaian = Math.max(0, (item.meter_akhir || 0) - (item.meter_awal || 0))
+  item.pemakaian = pemakaian
+  // Rumus: (pemakaian - 10) * tarif, minimum 0
+  const kelebihan = Math.max(0, pemakaian - 10)
+  item.total = kelebihan * (item.tarif_per_m3 || 0)
 }
 
 const sendWAReminder = (item: any) => {
@@ -194,7 +208,7 @@ const fetchMeterAir = async () => {
 
   if (wargaRes.error) throw wargaRes.error
   const warga = wargaRes.data || []
-  const defaultTariff = tariffRes.data?.nominal_default || 3500
+  const defaultTariff = tariffRes.data?.nominal_default || 2000
   const records = recordsRes.data || []
   const allPrevRecords = prevRes.data || []
 
@@ -210,6 +224,7 @@ const fetchMeterAir = async () => {
 
   meterList.value = warga.map(w => {
     const existing = recordsMap.get(w.id)
+    const prevEnd = lastMeterMap.get(w.id) || 0
     
     // Auto check if late (deadline is 15th of the current month)
     const today = new Date()
@@ -220,13 +235,18 @@ const fetchMeterAir = async () => {
     
     const autoLate = isPastPeriod || isCurrentPeriodAndLate
 
+    // LOGIKA MIGRASI: Jika record sudah ada di DB tapi meter_awal masih 0 sedangkan ada data bulan lalu,
+    // maka kita gunakan data bulan lalu sebagai meter_awal.
+    const meterAwal = (existing && (existing.meter_awal !== 0 || prevEnd === 0)) ? existing.meter_awal : prevEnd
+
     return {
       id: existing?.id,
       warga_id: w.id,
       bulan: filterBulan.value,
       tahun: filterTahun.value,
-      meter_awal: existing?.meter_awal ?? (lastMeterMap.get(w.id) || 0),
-      meter_akhir: existing?.meter_akhir ?? (lastMeterMap.get(w.id) || 0),
+      meter_awal: meterAwal,
+      // Jika data belum ada di DB, biarkan null agar input kosong (tidak mengisi otomatis)
+      meter_akhir: existing ? existing.meter_akhir : null,
       pemakaian: existing?.pemakaian ?? 0,
       tarif_per_m3: existing?.tarif_per_m3 ?? defaultTariff,
       is_late: existing?.is_late ?? autoLate,
@@ -262,6 +282,25 @@ const handleSave = async (item: any) => {
     }
 
     if (error) throw error
+
+    // --- LOGIKA OTOMATIS KE BULAN BERIKUTNYA ---
+    // Cari apakah ada record bulan berikutnya (yang paling dekat) untuk warga ini
+    const { data: nextRecord } = await supabase
+      .from('meter_air')
+      .select('id')
+      .eq('warga_id', item.warga_id)
+      .or(`tahun.gt.${item.tahun},and(tahun.eq.${item.tahun},bulan.gt.${item.bulan})`)
+      .order('tahun', { ascending: true })
+      .order('bulan', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+    
+    // Jika ada bulan berikutnya, update nilai meter_awal-nya
+    if (nextRecord) {
+      await supabase.from('meter_air').update({
+        meter_awal: item.meter_akhir
+      }).eq('id', nextRecord.id)
+    }
     
     await logActivity(item.id ? 'UPDATE_METER_AIR' : 'ADD_METER_AIR', 'meter_air', {
       warga_name: item.warga?.nama_kepala_keluarga,

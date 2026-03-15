@@ -279,18 +279,43 @@ const handleGenerate = async () => {
         const citizenCustom = customMap.get(w.id)
         if (citizenCustom && citizenCustom.length > 0) {
           citizenCustom.forEach((ci: any) => {
+            // Cari info jenis iuran untuk cek namanya
+            const jIuran = iuran.find(i => i.id === ci.jenis_iuran_id)
+            // Lewati jika ini adalah iuran kelebihan air (karena akan dihitung dari meteran di bawah)
+            if (jIuran && jIuran.nama_iuran === 'kelebihan_air') return
+
             details.push({ jenis_iuran_id: ci.jenis_iuran_id, jumlah: ci.nominal })
             total += ci.nominal
           })
         } else {
-          iuran.filter(i => i.nama_iuran !== 'iuran_rumah_kosong' && i.nama_iuran !== 'denda_air').forEach(i => {
-            const isExcess = i.nama_iuran.includes('kelebihan') && i.nama_iuran.includes('air')
-            const amount = isExcess ? (meterMap.get(w.id)?.total || 0) : i.nominal_default
+          // Defaults: exclude special ones
+          iuran.filter(i => 
+            i.nama_iuran !== 'iuran_rumah_kosong' && 
+            i.nama_iuran !== 'denda_air' && 
+            i.nama_iuran !== 'kelebihan_air'
+          ).forEach(i => {
+            details.push({ jenis_iuran_id: i.id, jumlah: i.nominal_default })
+            total += i.nominal_default
+          })
+        }
+
+        // --- Handle Kelebihan Air (untuk SEMUA warga aktif) ---
+        // Kita kunci menggunakan nama_iuran: 'kelebihan_air'
+        const waterIuran = iuran.find(i => i.nama_iuran === 'kelebihan_air')
+        if (waterIuran) {
+          const mData = meterMap.get(w.id)
+          if (mData) {
+            // Gunakan nominal_default dari waterIuran sebagai tarif global terbaru
+            const tarifTerbaru = waterIuran.nominal_default
+            const pemakaian = Math.max(0, (mData.meter_akhir || 0) - (mData.meter_awal || 0))
+            const kelebihan = Math.max(0, pemakaian - 10)
+            const amount = kelebihan * tarifTerbaru
+
             if (amount > 0) {
-              details.push({ jenis_iuran_id: i.id, jumlah: amount })
+              details.push({ jenis_iuran_id: waterIuran.id, jumlah: amount })
               total += amount
             }
-          })
+          }
         }
 
         const mData = meterMap.get(w.id)
