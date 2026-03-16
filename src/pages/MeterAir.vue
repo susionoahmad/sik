@@ -1,104 +1,138 @@
 <template>
   <div class="space-y-6">
-    <div class="flex justify-between items-center">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <div>
         <h2 class="text-2xl font-bold text-slate-800">Meter Air Bulanan</h2>
         <p class="text-slate-500 text-sm">Input data pemakaian air warga bulanan.</p>
       </div>
-      <div class="flex gap-4">
+      <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
         <select v-model="filterBulan" class="input-field w-32">
           <option v-for="(b, i) in bulanNames" :key="i" :value="i + 1">{{ b }}</option>
         </select>
         <select v-model="filterTahun" class="input-field w-32">
           <option v-for="y in tahunRange" :key="y" :value="y">{{ y }}</option>
         </select>
+        <button 
+          @click="showReminderModal = true" 
+          class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-green-500/20 active:scale-95 transition-all"
+        >
+          <MessageCircleIcon class="w-4 h-4" />
+          <span>Reminder WA</span>
+        </button>
       </div>
     </div>
 
-    <div class="card overflow-hidden !p-0">
-      <div class="p-4 border-b border-slate-200 bg-slate-50 text-sm text-slate-600 italic">
-        * Total biaya air di sini hanya menghitung **kelebihan pemakaian di atas 10m3**. Abodemen air (Rp 20.000) sudah ada di menu Jenis Iuran. 
-        **Wajib lapor maksimal tanggal 15 setiap bulannya, telat lapor dikenakan denda Rp 25.000**.
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="card flex items-center gap-4 border-l-4 border-green-500">
+        <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600">✅</div>
+        <div>
+          <p class="text-slate-500 text-[10px] font-black uppercase tracking-widest">Sudah Lapor</p>
+          <p class="text-xl font-black text-slate-800">{{ meterList.filter(m => !!m.id).length }} Warga</p>
+        </div>
+      </div>
+      <div class="card flex items-center gap-4 border-l-4 border-amber-500">
+        <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">⏳</div>
+        <div>
+          <p class="text-slate-500 text-[10px] font-black uppercase tracking-widest">Belum Lapor</p>
+          <p class="text-xl font-black text-slate-800">{{ meterList.filter(m => !m.id).length }} Warga</p>
+        </div>
+      </div>
+      <div class="card flex items-center gap-4 border-l-4 border-primary-500">
+        <div class="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600">💧</div>
+        <div>
+          <p class="text-slate-500 text-[10px] font-black uppercase tracking-widest">Total Pemakaian</p>
+          <p class="text-xl font-black text-slate-800">{{ meterList.reduce((a, b) => a + (b.pemakaian || 0), 0) }} m3</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card overflow-hidden !p-0 border-slate-200 shadow-xl">
+      <div class="p-4 border-b border-slate-200 bg-slate-50/50 text-xs font-medium text-slate-600 flex items-start gap-3">
+        <div class="mt-1 flex-shrink-0">ℹ️</div>
+        <div>
+          <p>Total biaya air hanya menghitung **kelebihan di atas 10m3**. Abodemen air sudah masuk di Tagihan utama.</p>
+          <p class="text-red-600 font-bold mt-1">⚠️ Batas lapor tgl 15. Lewat tgl 15 otomatis dianggap Terlambat (Denda).</p>
+        </div>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
-          <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-semibold">
+          <thead class="bg-slate-50 border-b border-slate-200 text-slate-400 text-[10px] uppercase font-black tracking-widest">
             <tr>
-              <th class="px-4 py-3">Warga</th>
-              <th class="px-3 py-3 text-center">Awal</th>
-              <th class="px-3 py-3 text-center">Akhir</th>
-              <th class="px-3 py-3 text-center">Tarif</th>
-              <th class="px-3 py-3 text-center">Telat</th>
-              <th class="px-3 py-3 text-center">M3</th>
-              <th class="px-3 py-3">Total</th>
-              <th class="px-3 py-3 text-right sticky right-0 bg-slate-50 border-l border-slate-200">Aksi</th>
+              <th class="px-6 py-4">Warga</th>
+              <th class="px-3 py-4 text-center">Awal</th>
+              <th class="px-3 py-4 text-center">Akhir</th>
+              <th class="px-3 py-4 text-center">Telat?</th>
+              <th class="px-3 py-4 text-center">M3</th>
+              <th class="px-3 py-4">Total</th>
+              <th class="px-6 py-4 text-right sticky right-0 bg-slate-50 border-l border-slate-200">Aksi</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-200">
+          <tbody class="divide-y divide-slate-100">
             <tr v-if="loading" v-for="i in 3" :key="i" class="animate-pulse">
-              <td colspan="8" class="px-4 py-3"><div class="h-4 bg-slate-200 rounded w-full"></div></td>
+              <td colspan="7" class="px-6 py-4"><div class="h-10 bg-slate-50 rounded-xl w-full"></div></td>
             </tr>
-            <tr v-else v-for="item in meterList" :key="item.warga_id" class="hover:bg-slate-50 transition-colors">
-              <td class="px-4 py-3">
-                <p class="font-bold text-slate-900 leading-tight">{{ item.warga?.nama_kepala_keluarga }}</p>
-                <p class="text-[10px] text-slate-500 uppercase">{{ item.warga?.no_rumah }}</p>
+            <tr v-else v-for="item in meterList" :key="item.warga_id" class="group hover:bg-slate-50/50 transition-all">
+              <td class="px-6 py-4">
+                <p class="font-black text-slate-800 leading-tight group-hover:text-primary-600 transition-colors">{{ item.warga?.nama_kepala_keluarga }}</p>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-tight mt-0.5">{{ item.warga?.no_rumah }}</p>
               </td>
-              <td class="px-2 py-3">
-                <input 
-                  type="number" 
-                  v-model.number="item.meter_awal" 
-                  class="w-16 border border-slate-200 rounded p-1 text-xs text-center bg-slate-50" 
-                  readonly
-                />
+              <td class="px-2 py-4 text-center">
+                <span class="px-3 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-500">{{ item.meter_awal }}</span>
               </td>
-              <td class="px-2 py-3">
+              <td class="px-2 py-4">
                 <input 
                   type="number" 
                   v-model.number="item.meter_akhir" 
                   @input="calculateTotal(item)"
-                  class="w-16 border border-slate-300 rounded p-1 text-xs text-center focus:ring-1 focus:ring-primary-500 outline-none" 
+                  class="w-20 bg-white border border-slate-200 rounded-xl p-2 text-sm font-black text-center focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none shadow-sm transition-all" 
+                  placeholder="0"
                 />
               </td>
-              <td class="px-2 py-3">
-                <input 
-                  type="number" 
-                  v-model.number="item.tarif_per_m3" 
-                  class="w-16 border border-slate-200 rounded p-1 text-xs text-center bg-slate-50" 
-                  readonly
-                />
+              <td class="px-2 py-4 text-center">
+                <label class="inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    v-model="item.is_late" 
+                    class="sr-only peer" 
+                  />
+                  <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500 relative transition-all"></div>
+                </label>
               </td>
-              <td class="px-2 py-3 text-center">
-                <input 
-                  type="checkbox" 
-                  v-model="item.is_late" 
-                  class="w-4 h-4 accent-red-500 rounded cursor-pointer" 
-                />
+              <td class="px-2 py-4 text-center">
+                <span :class="[
+                  'text-xs font-black px-2 py-1 rounded-lg',
+                  item.meter_akhir !== null ? 'bg-primary-50 text-primary-600' : 'text-slate-300'
+                ]">
+                  {{ item.meter_akhir !== null ? (item.pemakaian || 0) : '-' }} m3
+                </span>
               </td>
-              <td class="px-2 py-3 text-center font-medium text-slate-600 text-xs">
-                {{ item.meter_akhir !== null ? (item.pemakaian || 0) : '-' }} m3
+              <td class="px-3 py-4">
+                <p class="font-black text-slate-800 text-xs">
+                  {{ item.meter_akhir !== null ? formatCurrency(item.total || 0) : '-' }}
+                </p>
               </td>
-              <td class="px-3 py-3 font-bold text-primary-600 text-xs whitespace-nowrap">
-                {{ item.meter_akhir !== null ? formatCurrency(item.total || 0) : '-' }}
-              </td>
-              <td class="px-3 py-3 text-right sticky right-0 bg-white border-l border-slate-100 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.1)]">
-                <div class="flex flex-col gap-1 items-end">
+              <td class="px-6 py-4 text-right sticky right-0 bg-white group-hover:bg-slate-50/50 border-l border-slate-50 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.05)]">
+                <div class="flex items-center justify-end gap-2">
                   <button 
                     v-if="!item.id"
                     @click="sendWAReminder(item)"
-                    class="w-full bg-white text-green-600 px-2 py-1 rounded border border-green-200 hover:bg-green-50 text-[10px] font-bold transition-all"
+                    class="p-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-600 hover:text-white transition-all shadow-sm"
+                    title="Kirim Reminder WA"
                   >
-                    WA
+                    <MessageCircleIcon class="w-4 h-4" />
                   </button>
                   <button 
                     v-else
                     @click="handleDelete(item)"
-                    class="w-full bg-white text-red-600 px-2 py-1 rounded border border-red-200 hover:bg-red-50 text-[10px] font-bold transition-all"
+                    class="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all shadow-sm"
+                    title="Batalkan/Hapus"
                   >
-                    Batal
+                    <TrashIcon class="w-4 h-4" />
                   </button>
                   <button 
                     @click="handleSave(item)" 
-                    class="w-full bg-green-600 text-white px-2 py-1 rounded text-[10px] font-bold hover:bg-green-700 transition-all disabled:opacity-50"
+                    class="px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-600 transition-all shadow-lg active:scale-95 disabled:opacity-50"
                     :disabled="item.saving"
                   >
                     {{ item.saving ? '...' : 'Simpan' }}
@@ -110,6 +144,47 @@
         </table>
       </div>
     </div>
+
+    <!-- Reminder Modal -->
+    <div v-if="showReminderModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-[2.5rem] shadow-2xl max-w-xl w-full max-h-[85vh] overflow-hidden flex flex-col border border-slate-100">
+        <div class="px-8 py-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+          <div>
+            <h3 class="text-xl font-black text-slate-800 tracking-tight">Kirim Pengingat WA</h3>
+            <p class="text-xs font-bold text-slate-400 uppercase mt-0.5">{{ meterList.filter(m => !m.id).length }} Warga Belum Melapor</p>
+          </div>
+          <button @click="showReminderModal = false" class="p-2 rounded-full hover:bg-slate-100 text-slate-400 transition-colors">
+            <XIcon class="w-5 h-5" />
+          </button>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto px-8 py-8 space-y-4">
+          <div v-if="meterList.filter(m => !m.id).length === 0" class="text-center py-10">
+            <div class="text-4xl mb-4">🎉</div>
+            <p class="text-slate-500 font-bold italic">Luar biasa! Semua warga sudah melaporkan meteran air.</p>
+          </div>
+          <div v-else v-for="w in meterList.filter(m => !m.id)" :key="'rem-'+w.warga_id" 
+            class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-green-200 hover:bg-white transition-all"
+          >
+            <div>
+              <p class="font-black text-slate-800 text-sm">{{ w.warga?.nama_kepala_keluarga }}</p>
+              <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{{ w.warga?.no_rumah }} • {{ w.warga?.no_hp || 'No HP Kosong' }}</p>
+            </div>
+            <button 
+              @click="sendWAReminder(w)"
+              class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-md active:scale-95"
+            >
+              <MessageCircleIcon class="w-3.5 h-3.5" />
+              <span>Ingatkan</span>
+            </button>
+          </div>
+        </div>
+        
+        <div class="px-8 py-6 bg-slate-50 border-t border-slate-100 flex justify-end">
+          <button @click="showReminderModal = false" class="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg active:scale-95">Tutup</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -118,6 +193,7 @@ import { ref, onMounted, watch } from 'vue'
 import { supabase } from '@/services/supabase'
 import { useSettingsStore } from '@/stores/settings'
 import { useLogger } from '@/utils/logger'
+import { MessageCircle as MessageCircleIcon, Trash2 as TrashIcon, X as XIcon } from 'lucide-vue-next'
 import type { MeterAir } from '@/types'
 
 const settingsStore = useSettingsStore()
@@ -127,6 +203,7 @@ const meterList = ref<(MeterAir & { saving?: boolean })[]>([])
 const loading = ref(true)
 const filterBulan = ref(new Date().getMonth() + 1)
 const filterTahun = ref(new Date().getFullYear())
+const showReminderModal = ref(false)
 
 const bulanNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
 const tahunRange = [new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1]
