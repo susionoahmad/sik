@@ -146,45 +146,50 @@
     </div>
 
     <!-- Reminder Modal -->
-    <div v-if="showReminderModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-[2.5rem] shadow-2xl max-w-xl w-full max-h-[85vh] overflow-hidden flex flex-col border border-slate-100">
-        <div class="px-8 py-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
-          <div>
-            <h3 class="text-xl font-black text-slate-800 tracking-tight">Kirim Pengingat WA</h3>
-            <p class="text-xs font-bold text-slate-400 uppercase mt-0.5">{{ meterList.filter(m => !m.id).length }} Warga Belum Melapor</p>
-          </div>
-          <button @click="showReminderModal = false" class="p-2 rounded-full hover:bg-slate-100 text-slate-400 transition-colors">
-            <XIcon class="w-5 h-5" />
-          </button>
-        </div>
-        
-        <div class="flex-1 overflow-y-auto px-8 py-8 space-y-4">
-          <div v-if="meterList.filter(m => !m.id).length === 0" class="text-center py-10">
-            <div class="text-4xl mb-4">🎉</div>
-            <p class="text-slate-500 font-bold italic">Luar biasa! Semua warga sudah melaporkan meteran air.</p>
-          </div>
-          <div v-else v-for="w in meterList.filter(m => !m.id)" :key="'rem-'+w.warga_id" 
-            class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-green-200 hover:bg-white transition-all"
-          >
+    <Teleport to="body">
+      <div v-if="showReminderModal" 
+        class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
+        @click.self="closeReminderModal"
+      >
+        <div class="bg-white rounded-[2.5rem] shadow-2xl max-w-xl w-full max-h-[85vh] overflow-hidden flex flex-col border border-slate-100" @click.stop>
+          <div class="px-8 py-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
             <div>
-              <p class="font-black text-slate-800 text-sm">{{ w.warga?.nama_kepala_keluarga }}</p>
-              <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{{ w.warga?.no_rumah }} • {{ w.warga?.no_hp || 'No HP Kosong' }}</p>
+              <h3 class="text-xl font-black text-slate-800 tracking-tight">Kirim Pengingat WA</h3>
+              <p class="text-xs font-bold text-slate-400 uppercase mt-0.5">{{ meterList.filter(m => !m.id).length }} Warga Belum Melapor</p>
             </div>
-            <button 
-              @click="sendWAReminder(w)"
-              class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-md active:scale-95"
-            >
-              <MessageCircleIcon class="w-3.5 h-3.5" />
-              <span>Ingatkan</span>
+            <button @click="closeReminderModal" class="p-2 rounded-full hover:bg-slate-100 text-slate-400 transition-colors">
+              <XIcon class="w-5 h-5" />
             </button>
           </div>
-        </div>
-        
-        <div class="px-8 py-6 bg-slate-50 border-t border-slate-100 flex justify-end">
-          <button @click="showReminderModal = false" class="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg active:scale-95">Tutup</button>
+          
+          <div class="flex-1 overflow-y-auto px-8 py-8 space-y-4">
+            <div v-if="meterList.filter(m => !m.id).length === 0" class="text-center py-10">
+              <div class="text-4xl mb-4">🎉</div>
+              <p class="text-slate-500 font-bold italic">Luar biasa! Semua warga sudah melaporkan meteran air.</p>
+            </div>
+            <div v-else v-for="w in meterList.filter(m => !m.id)" :key="'rem-'+w.warga_id" 
+              class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-green-200 hover:bg-white transition-all"
+            >
+              <div>
+                <p class="font-black text-slate-800 text-sm">{{ w.warga?.nama_kepala_keluarga }}</p>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{{ w.warga?.no_rumah }} • {{ w.warga?.no_hp || 'No HP Kosong' }}</p>
+              </div>
+              <button 
+                @click="sendWAReminder(w)"
+                class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-md active:scale-95"
+              >
+                <MessageCircleIcon class="w-3.5 h-3.5" />
+                <span>Ingatkan</span>
+              </button>
+            </div>
+          </div>
+          
+          <div class="px-8 py-6 bg-slate-50 border-t border-slate-100 flex justify-end">
+            <button @click="closeReminderModal" class="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg active:scale-95">Tutup Dialog</button>
+          </div>
         </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 
@@ -204,6 +209,11 @@ const loading = ref(true)
 const filterBulan = ref(new Date().getMonth() + 1)
 const filterTahun = ref(new Date().getFullYear())
 const showReminderModal = ref(false)
+
+const closeReminderModal = () => {
+  console.log('Explicitly closing reminder modal')
+  showReminderModal.value = false
+}
 
 const bulanNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
 const tahunRange = [new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1]
