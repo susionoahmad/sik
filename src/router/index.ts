@@ -78,6 +78,11 @@ const router = createRouter({
           component: () => import('@/pages/Transparency.vue')
         },
         {
+          path: 'struktur-organisasi',
+          name: 'struktur-organisasi',
+          component: () => import('@/pages/StrukturOrganisasi.vue')
+        },
+        {
           path: 'pengguna',
           name: 'users',
           component: () => import('@/pages/Users.vue'),
@@ -94,6 +99,29 @@ const router = createRouter({
           name: 'pengaturan',
           component: () => import('@/pages/Settings.vue'),
           meta: { roles: ['bendahara', 'ketua'] }
+        },
+        {
+          path: 'arsip-surat',
+          name: 'arsip-surat',
+          component: () => import('@/pages/sekretaris/ArsipSurat.vue'),
+          meta: { roles: ['bendahara', 'sekretaris', 'ketua'] }
+        },
+        {
+          path: 'template-surat',
+          name: 'template-surat',
+          component: () => import('@/pages/sekretaris/TemplateSurat.vue'),
+          meta: { roles: ['bendahara', 'sekretaris', 'ketua'] }
+        },
+        {
+          path: 'notulen',
+          name: 'notulen-list',
+          component: () => import('@/pages/NotulenPublic.vue')
+        },
+        {
+          path: 'kelola-notulen',
+          name: 'notulen',
+          component: () => import('@/pages/sekretaris/Notulen.vue'),
+          meta: { roles: ['bendahara', 'sekretaris', 'ketua'] }
         }
       ]
     }

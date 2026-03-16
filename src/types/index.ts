@@ -90,3 +90,40 @@ export interface MeterAir {
   is_late: boolean
   warga?: Warga
 }
+
+export interface Surat {
+  id: string
+  nomor_surat: string
+  judul_surat: string
+  tanggal_surat: string
+  tanggal_diterima?: string
+  pengirim: string
+  penerima: string
+  perihal: string
+  kategori: 'masuk' | 'keluar'
+  file_url: string
+  created_at: string
+}
+
+export interface SuratTemplate {
+  id: string
+  nama_template: string
+  konten_template: string
+  created_at: string
+}
+
+export interface Notulen {
+  id: string
+  judul_rapat: string
+  tanggal_rapat: string
+  lokasi: string
+  pimpinan_rapat: string
+  notulis: string
+  peserta: string[]
+  agenda: string
+  pembahasan: string
+  keputusan: string
+  file_url: string
+  created_at: string
+}
+

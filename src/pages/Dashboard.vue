@@ -29,41 +29,55 @@
       </div>
     </div>
 
-    <!-- Organizational Structure Flowchart -->
-    <div v-if="settingsStore.settings.structure && settingsStore.settings.structure.length > 0" class="card">
-      <h3 class="font-bold text-slate-800 mb-8 flex items-center gap-2">
-        <span>Struktur Organisasi {{ settingsStore.organizationLabel }}</span>
-      </h3>
-      
-      <div class="relative py-4 overflow-x-auto">
-        <div class="flex flex-col items-center min-w-[600px]">
-          <!-- Top Level (Ketua) -->
-          <div class="flex gap-8 mb-12 relative">
-            <div v-for="chief in settingsStore.settings.structure.filter((s: any) => s.role.toLowerCase().includes('ketua'))" :key="chief.name" 
-              class="relative z-10 flex flex-col items-center">
-              <div class="bg-primary-600 text-white p-4 rounded-xl shadow-lg border-2 border-primary-500 w-48 text-center transition-transform hover:scale-105">
-                <p class="text-[10px] uppercase font-black tracking-widest opacity-80 mb-1">{{ chief.role }}</p>
-                <p class="font-bold text-sm">{{ chief.name }}</p>
+    <!-- Organizational Structure & Minutes -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Organizational Structure -->
+      <div v-if="settingsStore.settings.structure && settingsStore.settings.structure.length > 0" class="card">
+        <h3 class="font-bold text-slate-800 mb-8 flex items-center gap-2">
+          <span>Struktur Organisasi {{ settingsStore.organizationLabel }}</span>
+        </h3>
+        
+        <div class="relative py-4 overflow-x-auto">
+          <div class="flex flex-col items-center min-w-[300px]">
+            <!-- Structure Flowchart (simplified for dashboard) -->
+            <div class="flex flex-col items-center gap-4">
+              <div v-for="member in settingsStore.settings.structure.slice(0, 5)" :key="member.name"
+                class="bg-white p-3 rounded-xl shadow-sm border border-slate-100 w-full flex justify-between items-center group hover:border-primary-200 transition-all">
+                <p class="text-[10px] uppercase font-black tracking-widest text-primary-600 opacity-80">{{ member.role }}</p>
+                <p class="font-bold text-slate-800 text-sm">{{ member.name }}</p>
               </div>
-              <!-- Connector Line Down -->
-              <div class="h-12 w-0.5 bg-slate-200 mt-0"></div>
             </div>
+            <router-link to="/struktur-organisasi" class="mt-4 text-xs font-bold text-slate-400 hover:text-primary-600 uppercase tracking-widest">Detail Struktur</router-link>
           </div>
+        </div>
+      </div>
 
-          <!-- Vertical Connector Line -->
-          <div class="h-0.5 w-full max-w-2xl bg-slate-200 -mt-12 mb-0"></div>
-
-          <!-- Middle Level (Staffs) -->
-          <div class="flex flex-wrap justify-center gap-6 pt-0">
-            <div v-for="staff in settingsStore.settings.structure.filter((s: any) => !s.role.toLowerCase().includes('ketua'))" :key="staff.name" 
-              class="flex flex-col items-center">
-              <!-- Connector Line Down -->
-              <div class="h-8 w-0.5 bg-slate-200"></div>
-              <div class="bg-white p-4 rounded-xl shadow-md border border-slate-200 w-44 text-center transition-all hover:shadow-lg hover:border-primary-200 group">
-                <p class="text-[10px] uppercase font-black tracking-widest text-primary-600 mb-1 opacity-80">{{ staff.role }}</p>
-                <p class="font-bold text-slate-800 text-sm group-hover:text-primary-700">{{ staff.name }}</p>
-              </div>
+      <!-- Recent Notulen -->
+      <div class="card flex flex-col">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="font-bold text-slate-800 flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-sm">📝</span>
+            Notulen Rapat Terbaru
+          </h3>
+          <router-link to="/notulen" class="text-primary-600 text-sm font-semibold hover:underline">Semua</router-link>
+        </div>
+        
+        <div v-if="!loaded" class="space-y-4 animate-pulse">
+          <div v-for="i in 2" :key="i" class="h-20 bg-slate-50 rounded-2xl"></div>
+        </div>
+        <div v-else-if="recentNotulens.length === 0" class="flex-1 flex flex-col items-center justify-center text-slate-400 italic text-sm py-10">
+          Belum ada catatan rapat.
+        </div>
+        <div v-else class="space-y-4 flex-1">
+          <div v-for="n in recentNotulens" :key="n.id" 
+            class="p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-primary-200 hover:bg-white hover:shadow-lg hover:shadow-primary-500/5 transition-all group cursor-pointer"
+            @click="selectedNotulen = n"
+          >
+            <div class="flex justify-between items-start mb-1">
+              <h4 class="font-black text-slate-800 text-sm group-hover:text-primary-600 transition-colors line-clamp-1">{{ n.judul_rapat }}</h4>
+              <span class="text-[10px] font-bold text-slate-400 whitespace-nowrap ml-2 uppercase">{{ formatDate(n.tanggal_rapat) }}</span>
             </div>
+            <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed italic">"{{ n.keputusan }}"</p>
           </div>
         </div>
       </div>
@@ -97,6 +111,56 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal View Notulen -->
+    <div v-if="selectedNotulen" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col border border-slate-100">
+        <div class="px-8 py-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+          <h3 class="text-lg font-black text-slate-800 tracking-tight">Detail Notulen Rapat</h3>
+          <button @click="selectedNotulen = null" class="p-2 rounded-full hover:bg-slate-100 text-slate-400 transition-colors">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div class="flex-1 overflow-y-auto px-8 py-8 space-y-6">
+          <div>
+            <p class="text-[10px] font-black uppercase tracking-widest text-primary-500 mb-1">Judul Rapat</p>
+            <h2 class="text-2xl font-black text-slate-800 leading-tight">{{ selectedNotulen.judul_rapat }}</h2>
+            <p class="text-sm font-bold text-slate-400 mt-1 uppercase">{{ formatDate(selectedNotulen.tanggal_rapat) }} • {{ selectedNotulen.lokasi }}</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Pimpinan</p>
+              <p class="text-sm font-bold text-slate-700">{{ selectedNotulen.pimpinan_rapat }}</p>
+            </div>
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Notulis</p>
+              <p class="text-sm font-bold text-slate-700">{{ selectedNotulen.notulis }}</p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <div class="space-y-1">
+              <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Pembahasan</p>
+              <p class="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{{ selectedNotulen.pembahasan }}</p>
+            </div>
+            <div class="space-y-1 bg-indigo-50/50 p-6 rounded-3xl border border-indigo-100/50">
+              <p class="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-2">Hasil Keputusan</p>
+              <p class="text-sm font-bold text-slate-800 leading-relaxed">{{ selectedNotulen.keputusan }}</p>
+            </div>
+            <div class="space-y-2">
+              <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Peserta Hadir ({{ selectedNotulen.peserta?.length || 0 }})</p>
+              <div class="flex flex-wrap gap-2">
+                <span v-for="p in selectedNotulen.peserta" :key="p" class="px-3 py-1 bg-white border border-slate-200 rounded-full text-[10px] font-bold text-slate-600">{{ p }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="px-8 py-5 bg-slate-50 border-t border-slate-100 flex justify-end">
+          <button @click="selectedNotulen = null" class="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg active:scale-95">Tutup</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -127,6 +191,8 @@ const saldoKasRT = ref(0)
 const unpaidBills = ref(0)
 const paidBills = ref(0)
 const recentTransactions = ref<any[]>([])
+const recentNotulens = ref<any[]>([])
+const selectedNotulen = ref<any>(null)
 
 const stats = computed(() => [
   { label: `Saldo Kas ${settingsStore.settings.orgType}`, value: formatCurrency(saldoKasRT.value), color: 'text-primary-600', icon: '💰' },
@@ -196,10 +262,16 @@ const fetchDashboardData = async () => {
       supabase.from('kas_transaksi')
         .select('id, keterangan, kategori, tanggal, jenis, jumlah')
         .order('tanggal', { ascending: false })
-        .limit(5)
+        .limit(5),
+      
+      // 6. Recent Notulen
+      supabase.from('notulen')
+        .select('*')
+        .order('tanggal_rapat', { ascending: false })
+        .limit(3)
     ])
 
-    const [monthKasRes, allKasRes, allRekeningRes, billsRes, recentRes] = await withTimeout(fetching as any, 8000) as any[]
+    const [monthKasRes, allKasRes, allRekeningRes, billsRes, recentRes, notulenRes] = await withTimeout(fetching as any, 8000) as any[]
 
     // Process results
     const currentKas = (monthKasRes.data || []) as any[]
@@ -224,6 +296,7 @@ const fetchDashboardData = async () => {
     paidBills.value = bills.filter((b: any) => b.status === 'lunas').length
 
     recentTransactions.value = recentRes.data || []
+    recentNotulens.value = notulenRes.data || []
   } catch (error) {
     console.error('Error fetching dashboard data:', error)
   } finally {

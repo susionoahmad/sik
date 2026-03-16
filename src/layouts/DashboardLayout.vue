@@ -106,7 +106,8 @@ import { useSettingsStore } from '@/stores/settings'
 import { 
   Menu as MenuIcon, X as XIcon, LogOut as LogOutIcon, Calendar as CalendarIcon,
   LayoutDashboard, Eye, Users, FileText, Settings, History, 
-  Droplet, Landmark, Wallet, FolderTree, Receipt, ArrowRightLeft, ShieldCheck
+  Droplet, Landmark, Wallet, FolderTree, Receipt, ArrowRightLeft, ShieldCheck,
+  Mail, FileStack, BookOpenText, Network
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -135,6 +136,8 @@ const menuItems = computed(() => {
   const role = authStore.profile?.role || 'warga'
   const items = [
     { name: 'dashboard', path: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { name: 'notulen-list', path: '/notulen', label: 'Notulen Rapat', icon: BookOpenText },
+    { name: 'struktur-organisasi', path: '/struktur-organisasi', label: 'Struktur Organisasi', icon: Network },
     { name: 'transparansi', path: '/transparansi', label: 'Transparansi', icon: Eye }
   ]
 
@@ -163,6 +166,14 @@ const menuItems = computed(() => {
       { name: 'users', path: '/pengguna', label: 'Manajemen Pengguna', icon: ShieldCheck },
       { name: 'activity-logs', path: '/logs', label: 'Log Aktivitas', icon: History },
       { name: 'pengaturan', path: '/pengaturan', label: 'Pengaturan', icon: Settings }
+    )
+  }
+
+  if (['bendahara', 'sekretaris', 'ketua'].includes(role)) {
+    items.push(
+      { name: 'arsip-surat', path: '/arsip-surat', label: 'Arsip Surat', icon: Mail },
+      { name: 'template-surat', path: '/template-surat', label: 'Template Surat', icon: FileStack },
+      { name: 'notulen', path: '/kelola-notulen', label: 'Kelola Notulen', icon: Settings }
     )
   }
 
