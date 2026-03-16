@@ -48,26 +48,29 @@
           </div>
         </div>
 
-        <!-- Mobile View (Vertical Flow) -->
-        <div class="md:hidden flex flex-col items-center gap-6 py-6">
+        <!-- Mobile View (Vertical Tree) -->
+        <div class="md:hidden flex flex-col items-center py-4">
           <!-- Level 1: Ketua (Mobile) -->
-          <div v-for="chief in structureByLevel.chiefs" :key="'mob-'+chief.name" class="w-full max-w-[280px] relative">
-            <div class="bg-gradient-to-br from-primary-600 to-primary-800 text-white p-5 rounded-3xl shadow-xl border-4 border-white text-center">
-              <p class="text-[8px] uppercase font-black tracking-widest opacity-80 mb-1">{{ chief.role }}</p>
-              <p class="font-black text-base">{{ chief.name }}</p>
+          <div v-for="(chief, idx) in structureByLevel.chiefs" :key="'mob-'+chief.name" class="w-full flex flex-col items-center">
+            <div class="w-full max-w-[260px] bg-gradient-to-br from-primary-600 to-primary-800 text-white p-4 rounded-2xl shadow-lg border-2 border-white text-center relative z-10 transition-transform active:scale-95">
+              <p class="text-[7px] uppercase font-black tracking-widest opacity-70 mb-0.5">{{ chief.role }}</p>
+              <p class="font-black text-sm leading-tight">{{ chief.name }}</p>
             </div>
-            <div class="h-8 w-1 bg-primary-600 mx-auto"></div>
+            <!-- Line indicator -->
+            <div v-if="idx < structureByLevel.chiefs.length - 1 || structureByLevel.staffs.length > 0" class="h-6 w-0.5 bg-primary-600"></div>
           </div>
 
-          <!-- Level 2: Staff (Mobile Grid) -->
-          <div class="grid grid-cols-1 gap-4 w-full px-4">
-            <div v-for="staff in structureByLevel.staffs" :key="'mob-'+staff.name" class="flex items-center gap-4 bg-white p-4 rounded-2xl shadow-md border border-slate-100">
-              <div class="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
-                <div class="w-2 h-2 bg-primary-500 rounded-full"></div>
-              </div>
-              <div class="flex flex-col min-w-0">
-                <p class="text-[9px] uppercase font-black tracking-widest text-primary-600 opacity-80">{{ staff.role }}</p>
-                <p class="font-bold text-slate-800 text-sm truncate">{{ staff.name }}</p>
+          <!-- Level 2: Staff (Mobile 2-Column Grid) -->
+          <div v-if="structureByLevel.staffs.length > 0" class="w-full px-2">
+            <!-- Horizontal connector from chiefs to staff grid -->
+            <div class="w-0.5 h-4 bg-primary-200 mx-auto"></div>
+            <div class="grid grid-cols-2 gap-3">
+              <div v-for="staff in structureByLevel.staffs" :key="'mob-'+staff.name" class="group bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center transition-all active:bg-primary-50">
+                <div class="w-7 h-7 rounded-lg bg-primary-50 flex items-center justify-center mb-2 group-active:bg-white">
+                  <UserIcon class="w-3.5 h-3.5 text-primary-500" />
+                </div>
+                <p class="text-[7px] uppercase font-black tracking-tighter text-primary-600 opacity-80 mb-0.5 leading-none">{{ staff.role }}</p>
+                <p class="font-bold text-slate-800 text-[10px] leading-tight">{{ staff.name }}</p>
               </div>
             </div>
           </div>
