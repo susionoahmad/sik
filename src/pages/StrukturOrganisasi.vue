@@ -13,16 +13,12 @@
 
     <!-- Hierarchy Visualization -->
     <div class="card overflow-hidden !p-0 bg-slate-50/50 border-dashed border-2 border-slate-200">
-      <div class="p-8 md:p-12 overflow-x-auto min-h-[500px] flex justify-center">
-        <div class="flex flex-col items-center min-w-[800px]">
-          
+      <div class="p-4 md:p-12 overflow-x-auto min-h-[400px] md:min-h-[500px]">
+        <!-- Desktop View (Horizontal Tree) -->
+        <div class="hidden md:flex flex-col items-center min-w-[800px] mx-auto">
           <!-- Level 1: Ketua -->
           <div class="flex justify-center gap-8 mb-16 relative">
-            <div 
-              v-for="chief in structureByLevel.chiefs" 
-              :key="chief.name"
-              class="relative z-10"
-            >
+            <div v-for="chief in structureByLevel.chiefs" :key="chief.name" class="relative z-10">
               <div class="bg-gradient-to-br from-primary-600 to-primary-800 text-white p-6 rounded-[2rem] shadow-2xl shadow-primary-500/20 border-4 border-white w-64 text-center transition-transform hover:scale-105">
                 <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-md">
                   <ShieldCheckIcon class="w-6 h-6 text-white" />
@@ -30,7 +26,6 @@
                 <p class="text-[10px] uppercase font-black tracking-[0.2em] opacity-80 mb-1">{{ chief.role }}</p>
                 <p class="font-black text-lg leading-tight">{{ chief.name }}</p>
               </div>
-              <!-- Connector Line Down -->
               <div class="absolute top-full left-1/2 -translate-x-1/2 h-16 w-1 bg-gradient-to-b from-primary-600 to-slate-200"></div>
             </div>
           </div>
@@ -40,12 +35,7 @@
 
           <!-- Level 2: Staff / Members -->
           <div class="flex flex-wrap justify-center gap-8 pt-0">
-            <div 
-              v-for="staff in structureByLevel.staffs" 
-              :key="staff.name"
-              class="flex flex-col items-center w-52"
-            >
-              <!-- Connector Line Down -->
+            <div v-for="staff in structureByLevel.staffs" :key="staff.name" class="flex flex-col items-center w-52">
               <div class="h-10 w-1 bg-slate-200"></div>
               <div class="bg-white p-6 rounded-3xl shadow-xl shadow-slate-200 border border-slate-100 w-full text-center transition-all hover:shadow-2xl hover:border-primary-200 group relative">
                 <div class="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center border-4 border-slate-50">
@@ -56,9 +46,34 @@
               </div>
             </div>
           </div>
+        </div>
 
-          <div v-if="settingsStore.settings.structure.length === 0" class="py-20 text-center text-slate-400 italic font-medium">
-            Belum ada struktur organisasi yang diatur oleh pengurus.
+        <!-- Mobile View (Vertical Flow) -->
+        <div class="md:hidden flex flex-col items-center gap-6 py-6">
+          <!-- Level 1: Ketua (Mobile) -->
+          <div v-for="chief in structureByLevel.chiefs" :key="'mob-'+chief.name" class="w-full max-w-[280px] relative">
+            <div class="bg-gradient-to-br from-primary-600 to-primary-800 text-white p-5 rounded-3xl shadow-xl border-4 border-white text-center">
+              <p class="text-[8px] uppercase font-black tracking-widest opacity-80 mb-1">{{ chief.role }}</p>
+              <p class="font-black text-base">{{ chief.name }}</p>
+            </div>
+            <div class="h-8 w-1 bg-primary-600 mx-auto"></div>
+          </div>
+
+          <!-- Level 2: Staff (Mobile Grid) -->
+          <div class="grid grid-cols-1 gap-4 w-full px-4">
+            <div v-for="staff in structureByLevel.staffs" :key="'mob-'+staff.name" class="flex items-center gap-4 bg-white p-4 rounded-2xl shadow-md border border-slate-100">
+              <div class="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
+                <div class="w-2 h-2 bg-primary-500 rounded-full"></div>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <p class="text-[9px] uppercase font-black tracking-widest text-primary-600 opacity-80">{{ staff.role }}</p>
+                <p class="font-bold text-slate-800 text-sm truncate">{{ staff.name }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="settingsStore.settings.structure.length === 0" class="py-10 text-center text-slate-400 italic text-sm">
+            Belum ada struktur organisasi.
           </div>
         </div>
       </div>
