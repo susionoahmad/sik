@@ -341,7 +341,7 @@ const fetchMeterAir = async () => {
       warga: w,
       saving: false
     }
-  })
+  }).sort((a, b) => (a.warga?.no_rumah || '').localeCompare(b.warga?.no_rumah || '', undefined, { numeric: true, sensitivity: 'base' }))
 
   loading.value = false
 }

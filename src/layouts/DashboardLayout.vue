@@ -15,12 +15,12 @@
       <!-- Logo Area -->
       <div class="h-20 flex items-center px-6 border-b border-slate-800/60 shrink-0">
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-black shadow-lg shadow-primary-500/30">
-            {{ settingsStore.settings.orgType[0]?.toUpperCase() || 'S' }}
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-black shadow-lg shadow-primary-500/30 text-xl uppercase">
+            {{ (settingsStore.organizationLabel || settingsStore.settings.orgType || 'S')[0] }}
           </div>
           <div class="flex flex-col">
-            <h2 class="text-lg font-black text-white tracking-tight leading-tight uppercase">SIK-{{ settingsStore.settings.orgType }}</h2>
-            <p class="text-[10px] uppercase font-bold text-primary-400 tracking-wider">Sistem Keuangan</p>
+            <h2 class="text-lg font-black text-white tracking-tight leading-tight uppercase">{{ settingsStore.appTitle }}</h2>
+            <p class="text-[10px] uppercase font-bold text-primary-400 tracking-wider">Sistem Informasi Digital</p>
           </div>
         </div>
         <button @click="isSidebarOpen = false" class="ml-auto md:hidden text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors">
@@ -116,14 +116,14 @@ const authStore = useAuthStore()
 const settingsStore = useSettingsStore()
 const isSidebarOpen = ref(false)
 
-onMounted(() => {
+onMounted(async () => {
   if (!settingsStore.initialized) {
-    settingsStore.fetchSettings()
+    await settingsStore.fetchSettings()
   }
 })
 
 const currentRouteName = computed(() => {
-  if (route.name === 'kas-rt') return `Buku Kas ${settingsStore.settings.orgType}`
+  if (route.name === 'kas-rt') return `Buku Kas ${settingsStore.organizationLabel}`
   if (route.name === 'activity-logs') return 'Log Aktivitas'
   if (route.name === 'jenis-iuran') return 'Jenis Iuran'
   if (route.name === 'rekening-kas') return 'Master Kas'
@@ -142,7 +142,8 @@ const menuItems = computed(() => {
   ]
 
   if (['bendahara', 'sekretaris'].includes(role)) {
-    items.splice(1, 0, { name: 'warga', path: '/warga', label: 'Warga', icon: Users })
+    const label = settingsStore.residentLabel
+    items.splice(1, 0, { name: 'warga', path: '/warga', label: label, icon: Users })
   }
 
   if (['bendahara'].includes(role)) {
@@ -171,6 +172,7 @@ const menuItems = computed(() => {
 
   if (['bendahara', 'sekretaris', 'ketua'].includes(role)) {
     items.push(
+      { name: 'agenda', path: '/agenda', label: 'Agenda Rapat', icon: CalendarIcon },
       { name: 'arsip-surat', path: '/arsip-surat', label: 'Arsip Surat', icon: Mail },
       { name: 'template-surat', path: '/template-surat', label: 'Template Surat', icon: FileStack },
       { name: 'notulen', path: '/kelola-notulen', label: 'Kelola Notulen', icon: Settings }

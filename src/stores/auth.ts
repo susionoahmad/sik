@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/services/supabase'
-import { withTimeout } from '@/utils/promise'
 import type { User } from '@supabase/supabase-js'
 
 export interface Profile {
@@ -11,13 +10,16 @@ export interface Profile {
 }
 
 export const useAuthStore = defineStore('auth', {
-  state: () => ({
-    user: null as User | null,
-    profile: null as Profile | null,
-    loading: true,
-    initialized: false,
-    initPromise: null as Promise<void> | null,
-  }),
+  state: () => {
+    const cachedProfile = localStorage.getItem('auth_profile')
+    return {
+      user: null as User | null,
+      profile: cachedProfile ? JSON.parse(cachedProfile) : null as Profile | null,
+      loading: true,
+      initialized: false,
+      initPromise: null as Promise<void> | null,
+    }
+  },
   getters: {
     isAuthenticated: (state) => !!state.user,
     isAdmin: (state) => ['bendahara', 'ketua', 'sekretaris'].includes(state.profile?.role || ''),
@@ -31,13 +33,11 @@ export const useAuthStore = defineStore('auth', {
     async fetchProfile(userId: string) {
       if (!userId) return null
       try {
-        const fetching = supabase
+        const { data, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', userId)
           .single()
-        
-        const { data, error } = await withTimeout(fetching as any, 5000) as any
         
         if (error) {
           console.error('Error fetching profile:', error)
@@ -45,6 +45,8 @@ export const useAuthStore = defineStore('auth', {
         }
         
         this.profile = data as Profile
+        // Update cache
+        localStorage.setItem('auth_profile', JSON.stringify(this.profile))
         return data
       } catch (e) {
         console.error('Catch error fetching profile:', e)
@@ -53,40 +55,25 @@ export const useAuthStore = defineStore('auth', {
     },
     async initialize() {
       if (this.initPromise) return this.initPromise
-      if (this.initialized && this.user && this.profile) return Promise.resolve()
-
+      
       this.initPromise = (async () => {
         this.loading = true
         try {
-          const { data: { session }, error } = await withTimeout(supabase.auth.getSession() as any, 5000) as any
+          const { data: { session }, error } = await supabase.auth.getSession()
           if (error) throw error
           
           this.user = session?.user ?? null
           if (this.user) {
             await this.fetchProfile(this.user.id)
           }
-          this.initialized = true
         } catch (e) {
           console.error('Auth initialization error:', e)
         } finally {
           this.loading = false
+          this.initialized = true
           this.initPromise = null
         }
       })()
-
-      // Set up listener only once per app lifecycle
-      if (!(window as any).__auth_listener_set) {
-        ;(window as any).__auth_listener_set = true
-        supabase.auth.onAuthStateChange(async (event, session) => {
-          console.log('Auth state change:', event)
-          this.user = session?.user ?? null
-          if (this.user) {
-            await this.fetchProfile(this.user.id)
-          } else {
-            this.profile = null
-          }
-        })
-      }
 
       return this.initPromise
     },
@@ -96,6 +83,7 @@ export const useAuthStore = defineStore('auth', {
       } finally {
         this.user = null
         this.profile = null
+        localStorage.removeItem('auth_profile')
         this.loading = false
         this.initPromise = null
       }

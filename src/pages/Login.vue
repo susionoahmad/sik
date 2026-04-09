@@ -2,8 +2,8 @@
   <div class="min-h-screen bg-slate-50 flex items-center justify-center p-4">
     <div class="card max-w-md w-full">
       <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-slate-900 mb-2">SIK-{{ settingsStore.settings.orgType.toUpperCase() }}</h1>
-        <p class="text-slate-500">Sistem Informasi Keuangan {{ settingsStore.organizationLabel }}</p>
+        <h1 class="text-3xl font-bold text-slate-900 mb-2 uppercase">{{ settingsStore.appTitle }}</h1>
+        <p class="text-slate-500">Sistem Informasi Digital {{ settingsStore.organizationLabel }}</p>
       </div>
 
       <div class="flex gap-4 mb-6 p-1 bg-slate-100 rounded-lg">
@@ -133,9 +133,9 @@ const handleSubmit = async () => {
     loading.value = false
   }
 }
-onMounted(() => {
+onMounted(async () => {
   if (!settingsStore.initialized) {
-    settingsStore.fetchSettings()
+    await settingsStore.fetchSettings()
   }
 })
 </script>

@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/services/supabase'
-import { withTimeout } from '@/utils/promise'
 
 export interface OrgStructure {
   role: string
@@ -15,40 +14,63 @@ export interface AppSettings {
 }
 
 export const useSettingsStore = defineStore('settings', {
-  state: () => ({
-    settings: {
-      orgName: '05',
+  state: () => {
+    const cached = localStorage.getItem('app_settings')
+    let initialSettings = {
+      orgName: '',
       orgType: 'RT' as const,
       structure: [
         { role: 'Ketua', name: '-' },
         { role: 'Sekretaris', name: '-' },
         { role: 'Bendahara', name: '-' }
       ]
-    } as AppSettings,
-    loading: false,
-    initialized: false,
-    fetchPromise: null as Promise<void> | null
-  }),
+    } as AppSettings
+
+    if (cached) {
+      try {
+        initialSettings = JSON.parse(cached)
+      } catch (e) {
+        console.warn('Failed to parse cached settings')
+      }
+    }
+
+    return {
+      settings: initialSettings,
+      loading: false,
+      initialized: false,
+      fetchPromise: null as Promise<void> | null
+    }
+  },
   getters: {
     organizationLabel: (state) => {
-      return state.settings.orgType === 'RT' ? `RT ${state.settings.orgName}` : state.settings.orgName
+      const name = state.settings.orgName && state.settings.orgName !== '-' ? state.settings.orgName : ''
+      if (state.settings.orgType === 'RT') {
+        return name ? `RT ${name}` : ''
+      }
+      return name || ''
     },
-    organizationType: (state) => state.settings.orgType
+    organizationTypeLabel: (state) => {
+      return state.settings.orgType
+    },
+    residentLabel: () => 'Warga',
+    appTitle: (state) => {
+      const name = state.settings.orgName && state.settings.orgName !== '-' ? state.settings.orgName : ''
+      return name ? `SIK-${name}` : 'SIK'
+    }
   },
   actions: {
     async fetchSettings() {
+      // Return existing promise if fetch is in progress to avoid concurrent locks
       if (this.fetchPromise) return this.fetchPromise
       
       this.fetchPromise = (async () => {
         this.loading = true
         try {
-          const fetching = supabase
+          const { data, error } = await supabase
             .from('settings')
             .select('*')
             .eq('id', 'app_settings')
             .single()
-
-          const { data, error } = await withTimeout(fetching as any, 5000) as any
 
           if (error) {
             if (error.code === 'PGRST116') {
@@ -58,13 +80,15 @@ export const useSettingsStore = defineStore('settings', {
             }
           } else if (data) {
             this.settings = {
-              orgName: data.org_name,
-              orgType: data.org_type,
-              structure: data.structure
+              orgName: data.org_name || '',
+              orgType: data.org_type || 'RT',
+              structure: data.structure || []
             }
+            // Update cache
+            localStorage.setItem('app_settings', JSON.stringify(this.settings))
           }
         } catch (e) {
-          console.error('Failed to fetch settings (timeout or network):', e)
+          console.error('Failed to fetch settings:', e)
         } finally {
           this.loading = false
           this.initialized = true

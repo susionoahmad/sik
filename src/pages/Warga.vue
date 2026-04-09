@@ -2,11 +2,11 @@
   <div class="space-y-6">
     <div class="flex justify-between items-center">
       <div>
-        <h2 class="text-2xl font-bold text-slate-800">Manajemen Warga</h2>
-        <p class="text-slate-500 text-sm">Kelola data warga {{ settingsStore.organizationLabel }} Anda di sini.</p>
+        <h2 class="text-2xl font-bold text-slate-800">Manajemen {{ settingsStore.residentLabel }}</h2>
+        <p class="text-slate-500 text-sm">Kelola data {{ settingsStore.residentLabel.toLowerCase() }} {{ settingsStore.organizationLabel }} Anda di sini.</p>
       </div>
       <button @click="openAddModal" class="btn-primary flex items-center gap-2">
-        <span>+ Tambah Warga</span>
+        <span>+ Tambah {{ settingsStore.residentLabel }}</span>
       </button>
     </div>
 
@@ -15,7 +15,7 @@
       <div class="card flex items-center gap-4">
         <div class="bg-primary-100 text-primary-600 p-3 rounded-lg text-xl">🏠</div>
         <div>
-          <p class="text-slate-500 text-sm">Total Warga</p>
+          <p class="text-slate-500 text-sm">Total {{ settingsStore.residentLabel }}</p>
           <p class="text-2xl font-bold">{{ wargaList.length }}</p>
         </div>
       </div>
@@ -248,7 +248,7 @@ const fetchWarga = async () => {
     if (error) {
       alert('Gagal mengambil data warga: ' + error.message)
     } else {
-      wargaList.value = data || []
+      wargaList.value = (data || []).sort((a: any, b: any) => (a.no_rumah || '').localeCompare(b.no_rumah || '', undefined, { numeric: true, sensitivity: 'base' }))
     }
   } catch (e: any) {
     console.error('Fetch warga timeout or error:', e)

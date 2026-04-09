@@ -11,6 +11,11 @@ const router = createRouter({
       meta: { guestOnly: true }
     },
     {
+      path: '/absensi/:id',
+      name: 'absensi-public',
+      component: () => import('@/pages/AbsensiPublic.vue')
+    },
+    {
       path: '/',
       component: () => import('@/layouts/DashboardLayout.vue'),
       meta: { requiresAuth: true },
@@ -19,6 +24,18 @@ const router = createRouter({
           path: '',
           name: 'dashboard',
           component: () => import('@/pages/Dashboard.vue')
+        },
+        {
+          path: 'agenda',
+          name: 'agenda',
+          component: () => import('@/pages/sekretaris/Agenda.vue'),
+          meta: { roles: ['bendahara', 'sekretaris', 'ketua'] }
+        },
+        {
+          path: 'agenda/:id',
+          name: 'agenda-detail',
+          component: () => import('@/pages/sekretaris/AgendaDetail.vue'),
+          meta: { roles: ['bendahara', 'sekretaris', 'ketua'] }
         },
         {
           path: 'warga',

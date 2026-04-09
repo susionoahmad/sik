@@ -2,7 +2,7 @@
 -- Using flattened structure instead of generic key/value for better querying
 CREATE TABLE IF NOT EXISTS settings (
   id TEXT PRIMARY KEY DEFAULT 'app_settings',
-  org_name TEXT NOT NULL DEFAULT '05',
+  org_name TEXT NOT NULL DEFAULT '-',
   org_type TEXT NOT NULL DEFAULT 'RT', -- RT, Perumahan, Paguyuban
   structure JSONB NOT NULL DEFAULT '[
     {"role": "Ketua", "name": "-"},
@@ -27,7 +27,7 @@ CREATE POLICY "Settings manageable by bendahara and ketua" ON settings FOR ALL U
 INSERT INTO settings (id, org_name, org_type, structure)
 VALUES (
   'app_settings',
-  '05',
+  '-',
   'RT',
   '[
     {"role": "Ketua", "name": "-"},

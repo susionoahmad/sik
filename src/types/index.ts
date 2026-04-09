@@ -114,12 +114,15 @@ export interface SuratTemplate {
 
 export interface Notulen {
   id: string
+  agenda_id?: string
   judul_rapat: string
   tanggal_rapat: string
   lokasi: string
   pimpinan_rapat: string
   notulis: string
-  peserta: string[]
+  peserta: string[] // Keep for backward compatibility if needed
+  peserta_warga: string[] // Array of Warga IDs
+  peserta_luar: string[] // Array of guest names
   agenda: string
   pembahasan: string
   keputusan: string

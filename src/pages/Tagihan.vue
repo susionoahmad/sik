@@ -230,7 +230,7 @@ const fetchTagihan = async () => {
       .order('created_at', { ascending: false })
 
     if (error) throw error
-    tagihanList.value = data || []
+    tagihanList.value = (data || []).sort((a, b) => (a.warga?.no_rumah || '').localeCompare(b.warga?.no_rumah || '', undefined, { numeric: true, sensitivity: 'base' }))
   } catch (err: any) {
     alert('Gagal mengambil data: ' + err.message)
   } finally {
