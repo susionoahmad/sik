@@ -160,10 +160,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { supabase } from '@/services/supabase'
-import { agendaService, type Agenda, type Absensi } from '@/services/agendaService'
+import { agendaService, type Agenda } from '@/services/agendaService'
 import { useSettingsStore } from '@/stores/settings'
 import { 
   Calendar as CalendarIcon, Clock as ClockIcon, MapPin as MapPinIcon,
@@ -238,16 +238,6 @@ const formatDate = (dateStr: string) => {
   }).format(new Date(dateStr))
 }
 
-const handleShareWA = () => {
-  if (!agenda.value) return
-  
-  const publicLink = `${window.location.origin}/absensi/${agenda.value.id}`
-  const orgLabel = settingsStore.organizationLabel
-  const message = `*PRESENSI RAPAT ${settingsStore.residentLabel.toUpperCase()}*\n\nKepada Bpk/Ibu ${settingsStore.residentLabel.toLowerCase()} ${orgLabel}, mohon kerjasamanya untuk mengisi *Pra-Absensi* kehadiran untuk rapat yang akan dilaksanakan pada:\n\n📅 *Hari/Tgl:* ${formatDate(agenda.value.tanggal)}\n⏰ *Waktu:* ${agenda.value.waktu} WIB\n📍 *Lokasi:* ${agenda.value.lokasi}\n📝 *Agenda:* ${agenda.value.judul}\n\nSilakan klik tautan berikut untuk mengisi:\n${publicLink}\n\nTerima kasih atas partisipasinya.`
-  
-  const waUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
-  window.open(waUrl, '_blank')
-}
 
 const handleSubmit = async () => {
   if (!agenda.value || !form.value.warga_id) return

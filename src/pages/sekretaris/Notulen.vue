@@ -278,7 +278,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { supabase } from '@/services/supabase'
 import { useLogger } from '@/utils/logger'
 import { agendaService, type Agenda } from '@/services/agendaService'
@@ -290,6 +291,7 @@ import {
 } from 'lucide-vue-next'
 import type { Notulen, Warga } from '@/types'
 
+const route = useRoute()
 const { logActivity } = useLogger()
 
 const notulens = ref<Notulen[]>([])
@@ -515,7 +517,7 @@ onMounted(async () => {
   ])
   
   // Handle shortcut from AgendaDetail
-  const queryAgendaId = useRoute().query.agenda_id as string
+  const queryAgendaId = route.query.agenda_id as string
   if (queryAgendaId) {
     openAddModal()
     form.value.agenda_id = queryAgendaId

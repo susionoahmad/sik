@@ -185,13 +185,22 @@ const statusLabels: Record<string, string> = {
   finished: 'Selesai'
 }
 
-const form = ref({
+interface AgendaForm {
+  judul: string
+  tanggal: string
+  waktu: string
+  lokasi: string
+  deskripsi: string
+  status: 'draft' | 'published' | 'finished'
+}
+
+const form = ref<AgendaForm>({
   judul: '',
-  tanggal: new Date().toISOString().split('T')[0],
+  tanggal: new Date().toISOString().split('T')[0] || '',
   waktu: '19:30',
   lokasi: '',
   deskripsi: '',
-  status: 'draft' as 'draft' | 'published' | 'finished'
+  status: 'draft'
 })
 
 const filteredAgendas = computed(() => {
@@ -213,7 +222,7 @@ const openAddModal = () => {
   editingId.value = null
   form.value = {
     judul: '',
-    tanggal: new Date().toISOString().split('T')[0],
+    tanggal: new Date().toISOString().split('T')[0] || '',
     waktu: '19:30',
     lokasi: '',
     deskripsi: '',
@@ -224,7 +233,14 @@ const openAddModal = () => {
 
 const openEditModal = (item: Agenda) => {
   editingId.value = item.id
-  form.value = { ...item }
+  form.value = { 
+    judul: item.judul,
+    tanggal: item.tanggal,
+    waktu: item.waktu,
+    lokasi: item.lokasi,
+    deskripsi: item.deskripsi || '',
+    status: item.status
+  }
   showModal.value = true
 }
 
